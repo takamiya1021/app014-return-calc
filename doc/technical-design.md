@@ -25,11 +25,11 @@
 
 ### 1.2 ディレクトリ構造
 ```
-src/
+app014-return-calc/
 ├── app/                    # Next.js App Router
-│   ├── layout.tsx         # ルートレイアウト
+│   ├── layout.tsx         # ルートレイアウト（PWA対応）
 │   ├── page.tsx           # メインページ
-│   ├── history/           # 履歴ページ
+│   ├── history/           # 履歴ページ（将来用）
 │   └── api/               # API Routes（将来用）
 ├── components/            # Reactコンポーネント
 │   ├── calculator/        # 計算機関連
@@ -42,12 +42,12 @@ src/
 │   │   └── ComparisonChart.tsx
 │   ├── layout/            # レイアウト関連
 │   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   └── ThemeToggle.tsx
+│   │   ├── ThemeProvider.tsx
+│   │   └── PWAInstaller.tsx
 │   └── ui/                # 共通UIコンポーネント
 │       ├── Button.tsx
 │       ├── Card.tsx
-│       └── Modal.tsx
+│       └── Input.tsx
 ├── hooks/                 # カスタムフック
 │   ├── useCalculator.ts
 │   ├── useSimulation.ts
@@ -60,13 +60,14 @@ src/
 │   └── simulationStore.ts
 ├── types/                 # TypeScript型定義
 │   └── index.ts
-├── utils/                 # ユーティリティ
-│   ├── format.ts          # フォーマット関数
-│   └── validation.ts      # バリデーション
-└── locales/               # 多言語対応
-    ├── ja/
-    ├── en/
-    └── zh-TW/
+├── public/                # 静的ファイル
+│   ├── manifest.json      # PWA Manifest
+│   ├── sw.js              # Service Worker
+│   ├── icon.svg           # アプリアイコン
+│   └── favicon.ico
+├── server.js              # HTTPS開発サーバー
+├── cert.pem              # 自己署名証明書
+└── key.pem               # 秘密鍵
 ```
 
 ## 2. コンポーネント設計
@@ -81,9 +82,11 @@ interface CalculatorFormProps {
 }
 
 // 機能:
-// - 入力フォームの管理
-// - バリデーション
-// - リアルタイム計算
+// - 入力フォームの管理（React Hook Form + Zod）
+// - 日本語バリデーションメッセージ
+// - ボーナス月選択UI（任意月・複数選択）
+// - 自動保存・復元（LocalStorage）
+// - SSR/CSR対応
 ```
 
 #### ResultDisplay
@@ -92,11 +95,13 @@ interface ResultDisplayProps {
   result: CalculationResult;
   onSave?: () => void;
   onExport?: () => void;
+  onClearData?: () => void;
 }
 
 // 機能:
 // - 計算結果の表示
-// - 保存・エクスポートボタン
+// - 保存・エクスポート・データクリアボタン
+// - 年次推移テーブル表示
 ```
 
 #### AssetChart
@@ -107,9 +112,10 @@ interface AssetChartProps {
 }
 
 // 機能:
-// - 資産推移グラフの描画
+// - 資産推移グラフの描画（Recharts）
+// - 複数チャートタイプ（Line/Area）対応
 // - レスポンシブ対応
-// - アニメーション
+// - スムーズアニメーション
 ```
 
 ### 2.2 状態管理設計
@@ -153,7 +159,7 @@ function calculateCompoundInterest(
   for (let year = 1; year <= years; year++) {
     // 月次積立の追加
     const monthlyTotal = monthlyDeposit * 12;
-    const bonusTotal = bonusDeposit * 2; // 年2回
+    const bonusTotal = bonusDeposit * bonusMonths.length; // 選択された月数
 
     total = total * (1 + rate / 100) + monthlyTotal + bonusTotal;
 
@@ -199,34 +205,137 @@ function calculateMonthlyCompoundInterest(
 function calculateSimpleInterest(
   principal: number,
   rate: number,
-  years: number
+  years: number,
+  monthlyDeposit: number = 0,
+  bonusDeposit: number = 0,
+  bonusMonths: number[] = []
 ): CalculationResult {
   const interest = principal * (rate / 100) * years;
-  const total = principal + interest;
+  const totalDeposits = (monthlyDeposit * 12 + bonusDeposit * bonusMonths.length) * years;
+  const total = principal + interest + totalDeposits;
 
   return {
     finalAmount: total,
-    totalPrincipal: principal,
+    totalPrincipal: principal + totalDeposits,
     totalProfit: interest,
-    profitRate: (interest / principal) * 100,
-    yearlyBreakdown: generateYearlyData(principal, rate, years)
+    profitRate: (interest / (principal + totalDeposits)) * 100,
+    yearlyBreakdown: generateYearlyData(principal, rate, years, monthlyDeposit, bonusDeposit, bonusMonths)
   };
 }
 ```
 
-## 4. データ永続化
+## 4. PWA対応
 
-### 4.1 LocalStorage構造
+### 4.1 Web App Manifest
+```json
+{
+  "name": "投資リターン計算機",
+  "short_name": "投資計算機",
+  "description": "複利・単利計算で資産形成をシミュレーション",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+```
+
+### 4.2 Service Worker
+```javascript
+// キャッシュファーストの戦略
+const CACHE_NAME = 'investment-calculator-v1';
+const urlsToCache = [
+  '/',
+  '/manifest.json',
+  '/icon.svg',
+  '/_next/static/css/',
+  '/_next/static/js/'
+];
+
+// インストール時のキャッシュ設定
+self.addEventListener('install', (event) => {
+  console.log('Service Worker installing.');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// アクティベーション時の古いキャッシュ削除
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating.');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// フェッチイベントでキャッシュファーストの戦略
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        if (response) {
+          console.log('Cache hit:', event.request.url);
+          return response;
+        }
+        console.log('Cache miss, fetching:', event.request.url);
+        return fetch(event.request);
+      })
+  );
+});
+```
+
+### 4.3 HTTPS開発環境
+```javascript
+// server.js - 自己署名証明書によるHTTPS開発サーバー
+const https = require('https');
+const fs = require('fs');
+const { spawn } = require('child_process');
+
+const options = {
+  key: fs.readFileSync('key.pem'),
+  cert: fs.readFileSync('cert.pem')
+};
+
+// Next.js devサーバーをHTTPSでプロキシ
+```
+
+## 5. データ永続化
+
+### 5.1 LocalStorage構造
 ```typescript
 // キー構造
 const STORAGE_KEYS = {
   SIMULATIONS: 'investment_simulations',
   SETTINGS: 'app_settings',
-  VERSION: 'storage_version'
+  VERSION: 'storage_version',
+  FORM_DATA: 'form_data',
+  LAST_RESULT: 'last_result'
 };
 
 // データ保存
 class StorageService {
+  // シミュレーション管理
   static saveSimulation(simulation: Simulation): void {
     const stored = this.getSimulations();
     stored.push(simulation);
@@ -238,13 +347,51 @@ class StorageService {
     return data ? JSON.parse(data) : [];
   }
 
+  // オフライン対応：フォームデータの永続化
+  static saveFormData(formData: any): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.FORM_DATA, JSON.stringify(formData));
+  }
+
+  static getFormData(): any {
+    if (typeof window === 'undefined') return null;
+    const data = localStorage.getItem(STORAGE_KEYS.FORM_DATA);
+    return data ? JSON.parse(data) : null;
+  }
+
+  // オフライン対応：計算結果の永続化
+  static saveLastResult(result: any): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.LAST_RESULT, JSON.stringify(result));
+  }
+
+  static getLastResult(): any {
+    if (typeof window === 'undefined') return null;
+    const data = localStorage.getItem(STORAGE_KEYS.LAST_RESULT);
+    return data ? JSON.parse(data) : null;
+  }
+
+  // データクリア機能
+  static clearOfflineData(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(STORAGE_KEYS.FORM_DATA);
+    localStorage.removeItem(STORAGE_KEYS.LAST_RESULT);
+  }
+
+  static clearAllData(): void {
+    if (typeof window === 'undefined') return;
+    Object.values(STORAGE_KEYS).forEach(key => {
+      localStorage.removeItem(key);
+    });
+  }
+
+  // CSV エクスポート
   static exportToCSV(simulation: Simulation): string {
-    // CSV生成ロジック
-    const headers = ['Year', 'Principal', 'Profit', 'Total'];
+    const headers = ['年', '元本', '利益', '合計'];
     const rows = simulation.results.yearlyBreakdown.map(data =>
-      [data.year, data.principal, data.profit, data.total].join(',')
+      [data.year, data.principal.toLocaleString(), data.profit.toLocaleString(), data.total.toLocaleString()].join(',')
     );
-    return [headers.join(','), ...rows].join('\n');
+    return '\uFEFF' + [headers.join(','), ...rows].join('\n'); // BOM追加で文字化け防止
   }
 }
 ```

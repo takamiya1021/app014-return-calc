@@ -31,14 +31,15 @@
 
 - **定期積立計算**
   - 毎月固定額の積立
-  - ボーナス月の追加積立（年2回：6月、12月を想定）
+  - ボーナス月の追加積立（任意の月を複数選択可能）
 
 #### 2.1.2 入力項目
 - 初期投資額
 - 年利率（％）
-- 投資期間（年/月）
+- 投資期間（年）
 - 毎月積立額
 - ボーナス積立額（オプション）
+- ボーナス支給月の選択（任意月、複数選択可能）
 
 #### 2.1.3 表示機能
 - **数値表示**
@@ -53,14 +54,18 @@
   - レスポンシブ対応
 
 #### 2.1.4 データ管理
-- 計算結果の保存（LocalStorage）
+- 計算結果の自動保存・復元（LocalStorage）
+- フォーム入力データの自動保存・復元
 - CSVエクスポート機能
 - 複数シミュレーションの保存・管理
+- 保存データの一括クリア機能
 
 #### 2.1.5 UI/UX
 - プロフェッショナルなデザイン
 - モバイルレスポンシブ対応
 - ダークモード対応
+- PWA対応（ホーム画面追加・オフライン動作）
+- 日本語バリデーションメッセージ
 
 ### 2.2 追加機能（Phase 2）
 
@@ -101,6 +106,8 @@
 - Safari（最新版）
 - Firefox（最新版）
 - Edge（最新版）
+- PWA対応（ホーム画面インストール）
+- Service Worker対応（オフラインキャッシュ）
 
 ## 4. 技術仕様
 
@@ -108,10 +115,11 @@
 - **フレームワーク**: Next.js 14+ (App Router)
 - **言語**: TypeScript
 - **スタイリング**: Tailwind CSS
-- **グラフライブラリ**: Chart.js or Recharts
+- **グラフライブラリ**: Recharts
 - **状態管理**: Zustand
 - **フォームバリデーション**: React Hook Form + Zod
-- **国際化**: next-i18next
+- **PWA**: Web App Manifest + Service Worker
+- **多言語化**: 日本語（メイン）、将来的に多言語対応
 
 ### 4.2 デプロイ環境
 - Vercel（推奨）
@@ -147,6 +155,7 @@ interface Simulation {
     investmentPeriod: number;    // 投資期間（年）
     monthlyDeposit: number;      // 月額積立額
     bonusDeposit?: number;       // ボーナス積立額
+    bonusMonths?: number[];      // ボーナス支給月（1-12）
     compoundFrequency: 'yearly' | 'monthly'; // 複利計算頻度
     calculationType: 'simple' | 'compound';  // 計算種別
   };
@@ -181,8 +190,9 @@ interface YearlyData {
 
 ## 8. 制約事項
 - ブラウザのLocalStorageの容量制限（5MB程度）
-- オフライン環境でも基本機能は動作すること
+- PWA・Service Worker対応によるオフライン環境での動作保証
 - 個人情報は収集・保存しない
+- HTTPS環境でのPWA機能動作（開発時：自己署名証明書、本番：Vercel）
 
 ## 9. 今後の拡張可能性
 - ユーザーアカウント機能
