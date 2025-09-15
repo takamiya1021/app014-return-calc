@@ -10,7 +10,8 @@ export interface CalculationParams {
   annualRate: number;          // 年利率（％）
   investmentPeriod: number;    // 投資期間（年）
   monthlyDeposit: number;      // 月額積立額
-  bonusDeposit?: number;       // ボーナス積立額（年2回）
+  bonusDeposit?: number;       // ボーナス積立額
+  bonusMonths?: number[];      // ボーナス支給月（1-12の配列）
   compoundFrequency: CompoundFrequency; // 複利計算頻度
   calculationType: CalculationType;     // 計算種別
 }
@@ -73,4 +74,5 @@ export interface FormErrors {
   investmentPeriod?: string;
   monthlyDeposit?: string;
   bonusDeposit?: string;
+  bonusMonths?: string;
 }

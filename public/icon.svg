@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="512" height="512" fill="#3b82f6" rx="64"/>
+
+  <!-- 投資のイメージ（コイン） -->
+  <circle cx="180" cy="200" r="60" fill="#fbbf24" stroke="#f59e0b" stroke-width="4"/>
+  <text x="180" y="210" text-anchor="middle" fill="#92400e" font-family="Arial, sans-serif" font-size="36" font-weight="bold">¥</text>
+
+  <!-- 成長のイメージ（上昇矢印） -->
+  <path d="M280 320 L380 220 L350 250 L420 180 L450 210 L380 280 L410 250 L310 350 Z" fill="#10b981"/>
+
+  <!-- グラフのイメージ -->
+  <path d="M80 400 L120 380 L160 350 L200 300 L240 280 L280 250 L320 220 L360 200 L400 180"
+        stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- タイトル -->
+  <text x="256" y="450" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="bold">投資計算機</text>
+</svg>

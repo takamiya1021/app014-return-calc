@@ -3,6 +3,8 @@ import { Simulation } from '@/types';
 export class StorageService {
   private static readonly STORAGE_KEY = 'investment_simulations';
   private static readonly SETTINGS_KEY = 'investment_settings';
+  private static readonly FORM_DATA_KEY = 'investment_form_data';
+  private static readonly LAST_RESULT_KEY = 'investment_last_result';
 
   /**
    * CSVエクスポート
@@ -106,7 +108,86 @@ export class StorageService {
    * アプリ設定の取得
    */
   static getSettings(): any {
+    if (typeof window === 'undefined') {
+      return null; // SSR時はnullを返す
+    }
     const settings = localStorage.getItem(this.SETTINGS_KEY);
     return settings ? JSON.parse(settings) : null;
+  }
+
+  /**
+   * フォーム入力データの保存（オフライン対応）
+   */
+  static saveFormData(formData: any): void {
+    try {
+      localStorage.setItem(this.FORM_DATA_KEY, JSON.stringify({
+        ...formData,
+        savedAt: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.warn('フォームデータの保存に失敗しました:', error);
+    }
+  }
+
+  /**
+   * フォーム入力データの取得（オフライン対応）
+   */
+  static getFormData(): any {
+    try {
+      if (typeof window === 'undefined') {
+        return null; // SSR時はnullを返す
+      }
+      const data = localStorage.getItem(this.FORM_DATA_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.warn('フォームデータの取得に失敗しました:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 最後の計算結果の保存（オフライン対応）
+   */
+  static saveLastResult(result: any): void {
+    try {
+      localStorage.setItem(this.LAST_RESULT_KEY, JSON.stringify({
+        result,
+        savedAt: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.warn('計算結果の保存に失敗しました:', error);
+    }
+  }
+
+  /**
+   * 最後の計算結果の取得（オフライン対応）
+   */
+  static getLastResult(): any {
+    try {
+      if (typeof window === 'undefined') {
+        return null; // SSR時はnullを返す
+      }
+      const data = localStorage.getItem(this.LAST_RESULT_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.warn('計算結果の取得に失敗しました:', error);
+      return null;
+    }
+  }
+
+  /**
+   * オフライン対応データのクリア
+   */
+  static clearOfflineData(): void {
+    try {
+      if (typeof window === 'undefined') {
+        return; // SSR時は何もしない
+      }
+      localStorage.removeItem(this.FORM_DATA_KEY);
+      localStorage.removeItem(this.LAST_RESULT_KEY);
+      localStorage.removeItem(this.SETTINGS_KEY);
+    } catch (error) {
+      console.warn('オフラインデータのクリアに失敗しました:', error);
+    }
   }
 }

@@ -14,6 +14,7 @@ export function calculateCompoundInterest(params: CalculationParams): Calculatio
     investmentPeriod,
     monthlyDeposit,
     bonusDeposit = 0,
+    bonusMonths = [6, 12],
     compoundFrequency,
   } = params;
 
@@ -28,7 +29,7 @@ export function calculateCompoundInterest(params: CalculationParams): Calculatio
   for (let year = 1; year <= investmentPeriod; year++) {
     // 年間の積立額を計算
     const yearlyDeposit = monthlyDeposit * 12;
-    const yearlyBonus = bonusDeposit * 2; // 年2回（6月、12月）
+    const yearlyBonus = bonusDeposit * bonusMonths.length; // 選択した月数分
     const yearlyAddition = yearlyDeposit + yearlyBonus;
 
     // 複利計算（積立分は年度末に追加）
@@ -68,6 +69,7 @@ function calculateMonthlyCompoundInterest(params: CalculationParams): Calculatio
     investmentPeriod,
     monthlyDeposit,
     bonusDeposit = 0,
+    bonusMonths = [6, 12],
   } = params;
 
   const monthlyRate = annualRate / 12 / 100;
@@ -76,7 +78,6 @@ function calculateMonthlyCompoundInterest(params: CalculationParams): Calculatio
 
   let currentAmount = initialAmount;
   let totalPrincipal = initialAmount;
-  const bonusMonths = [6, 12]; // 6月と12月にボーナス
 
   for (let month = 1; month <= totalMonths; month++) {
     // 月次積立を追加
@@ -130,6 +131,7 @@ export function calculateSimpleInterest(params: CalculationParams): CalculationR
     investmentPeriod,
     monthlyDeposit,
     bonusDeposit = 0,
+    bonusMonths = [6, 12],
   } = params;
 
   const yearlyData: YearlyData[] = [];
@@ -137,7 +139,7 @@ export function calculateSimpleInterest(params: CalculationParams): CalculationR
 
   // 年間の積立額
   const yearlyDeposit = monthlyDeposit * 12;
-  const yearlyBonus = bonusDeposit * 2;
+  const yearlyBonus = bonusDeposit * bonusMonths.length;
   const yearlyAddition = yearlyDeposit + yearlyBonus;
 
   for (let year = 1; year <= investmentPeriod; year++) {

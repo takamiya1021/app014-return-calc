@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalculatorForm } from '@/components/calculator/CalculatorForm';
 import { ResultDisplay } from '@/components/calculator/ResultDisplay';
 import { AssetChart } from '@/components/charts/AssetChart';
@@ -18,10 +18,25 @@ function HomePage() {
   const { addSimulation } = useSimulationStore();
   const { isDarkMode, toggleTheme } = useTheme();
 
+  // 初期化時に前回の計算結果を復元
+  useEffect(() => {
+    const savedResult = StorageService.getLastResult();
+    if (savedResult) {
+      setCalculationResult(savedResult.result.calculationResult);
+      setCurrentParams(savedResult.result.params);
+    }
+  }, []);
+
   const handleCalculate = (params: CalculationParams) => {
     const result = calculate(params);
     setCalculationResult(result);
     setCurrentParams(params);
+
+    // 計算結果をLocalStorageに保存（オフライン対応）
+    StorageService.saveLastResult({
+      calculationResult: result,
+      params: params,
+    });
   };
 
   const handleSave = () => {
@@ -55,6 +70,14 @@ function HomePage() {
     StorageService.exportToCSV(simulation);
   };
 
+  const handleClearData = () => {
+    if (confirm('保存されたデータ（フォーム入力・計算結果・設定）をすべて削除しますか？\n\nこの操作は取り消せません。')) {
+      StorageService.clearOfflineData();
+      alert('データをクリアしました。ページを再読み込みします。');
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />
@@ -71,6 +94,7 @@ function HomePage() {
                 result={calculationResult}
                 onSave={handleSave}
                 onExport={handleExport}
+                onClearData={handleClearData}
               />
 
               {/* グラフ表示 */}

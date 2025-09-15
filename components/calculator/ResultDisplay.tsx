@@ -10,12 +10,14 @@ interface ResultDisplayProps {
   result: CalculationResult | null;
   onSave?: () => void;
   onExport?: () => void;
+  onClearData?: () => void;
 }
 
 export const ResultDisplay: React.FC<ResultDisplayProps> = ({
   result,
   onSave,
   onExport,
+  onClearData,
 }) => {
   if (!result) {
     return null;
@@ -27,14 +29,20 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
         <div className="flex justify-between items-center">
           <CardTitle>計算結果</CardTitle>
           <div className="flex gap-2">
-            {onSave && (
-              <Button variant="outline" size="sm" onClick={onSave}>
-                保存
-              </Button>
-            )}
-            {onExport && (
-              <Button variant="outline" size="sm" onClick={onExport}>
-                CSV出力
+            <Button variant="outline" size="sm" onClick={onSave}>
+              保存
+            </Button>
+            <Button variant="outline" size="sm" onClick={onExport}>
+              CSV出力
+            </Button>
+            {onClearData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClearData}
+                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-300 hover:border-red-400 dark:border-red-600 dark:hover:border-red-500"
+              >
+                🗑️ データクリア
               </Button>
             )}
           </div>
