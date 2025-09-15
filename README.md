@@ -28,7 +28,7 @@
 
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v3
 - **Charts**: Recharts
 - **State Management**: Zustand
 - **Form Validation**: React Hook Form + Zod
