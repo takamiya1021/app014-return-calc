@@ -35,10 +35,35 @@ export const AssetChart: React.FC<AssetChartProps> = ({ data, chartType = 'area'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // 月単位の表示（小数点以下がある場合）
+      const yearValue = parseFloat(label);
+      let displayLabel: string;
+
+      if (yearValue === 0) {
+        // 0年目は「開始時」表記
+        displayLabel = '開始時';
+      } else if (yearValue < 1) {
+        // 1年未満は「○ヶ月」表記
+        const months = Math.round(yearValue * 12);
+        displayLabel = `${months}ヶ月`;
+      } else if (Number.isInteger(yearValue)) {
+        // 整数年は「○年目」表記
+        displayLabel = `${yearValue}年目`;
+      } else {
+        // 小数点がある場合は「○年○ヶ月」表記
+        const years = Math.floor(yearValue);
+        const months = Math.round((yearValue - years) * 12);
+        if (months === 0) {
+          displayLabel = `${years}年目`;
+        } else {
+          displayLabel = `${years}年${months}ヶ月`;
+        }
+      }
+
       return (
         <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-            {`${label}年目`}
+            {displayLabel}
           </p>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {payload.map((entry: any, index: number) => (

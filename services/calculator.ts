@@ -26,15 +26,35 @@ export function calculateCompoundInterest(params: CalculationParams): Calculatio
   let currentAmount = initialAmount;
   let totalPrincipal = initialAmount;
 
+  // 初期状態（0年目）を追加
+  yearlyData.push({
+    year: 0,
+    principal: initialAmount,
+    profit: 0,
+    total: initialAmount,
+  });
+
   for (let year = 1; year <= investmentPeriod; year++) {
-    // 年間の積立額を計算
+    // 月々の積立を元本に追加
+    for (let month = 1; month <= 12; month++) {
+      const currentMonthInYear = month;
+      let monthlyAddition = monthlyDeposit;
+
+      // ボーナス月の処理
+      if (bonusMonths.includes(currentMonthInYear)) {
+        monthlyAddition += bonusDeposit;
+      }
+
+      // 積立を元本に追加
+      totalPrincipal += monthlyAddition;
+    }
+
+    // 年度末に、前年度末の資産額と今年度の積立額全体に対して年利を適用
     const yearlyDeposit = monthlyDeposit * 12;
-    const yearlyBonus = bonusDeposit * bonusMonths.length; // 選択した月数分
+    const yearlyBonus = bonusDeposit * bonusMonths.length;
     const yearlyAddition = yearlyDeposit + yearlyBonus;
 
-    // 複利計算（積立分は年度末に追加）
-    currentAmount = currentAmount * (1 + annualRate / 100) + yearlyAddition;
-    totalPrincipal += yearlyAddition;
+    currentAmount = (currentAmount + yearlyAddition) * (1 + annualRate / 100);
 
     const profit = currentAmount - totalPrincipal;
 
@@ -79,6 +99,14 @@ function calculateMonthlyCompoundInterest(params: CalculationParams): Calculatio
   let currentAmount = initialAmount;
   let totalPrincipal = initialAmount;
 
+  // 初期状態（0ヶ月目）を追加
+  yearlyData.push({
+    year: 0,
+    principal: initialAmount,
+    profit: 0,
+    total: initialAmount,
+  });
+
   for (let month = 1; month <= totalMonths; month++) {
     // 月次積立を追加
     currentAmount += monthlyDeposit;
@@ -94,18 +122,16 @@ function calculateMonthlyCompoundInterest(params: CalculationParams): Calculatio
     // 月複利計算
     currentAmount = currentAmount * (1 + monthlyRate);
 
-    // 年度末のデータを記録
-    if (month % 12 === 0) {
-      const year = month / 12;
-      const profit = currentAmount - totalPrincipal;
+    // 毎月データを記録
+    const year = month / 12;
+    const profit = currentAmount - totalPrincipal;
 
-      yearlyData.push({
-        year,
-        principal: totalPrincipal,
-        profit: profit,
-        total: currentAmount,
-      });
-    }
+    yearlyData.push({
+      year,
+      principal: totalPrincipal,
+      profit: profit,
+      total: currentAmount,
+    });
   }
 
   const finalAmount = currentAmount;
@@ -136,6 +162,14 @@ export function calculateSimpleInterest(params: CalculationParams): CalculationR
 
   const yearlyData: YearlyData[] = [];
   let totalPrincipal = initialAmount;
+
+  // 初期状態（0年目）を追加
+  yearlyData.push({
+    year: 0,
+    principal: initialAmount,
+    profit: 0,
+    total: initialAmount,
+  });
 
   // 年間の積立額
   const yearlyDeposit = monthlyDeposit * 12;

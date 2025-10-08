@@ -95,22 +95,49 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {result.yearlyBreakdown.slice(0, 5).map((data) => (
-                  <tr key={data.year}>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                      {data.year}年目
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">
-                      {formatCurrency(data.principal)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right text-emerald-600 dark:text-emerald-400">
-                      {formatCurrency(data.profit)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-gray-100">
-                      {formatCurrency(data.total)}
-                    </td>
-                  </tr>
-                ))}
+                {result.yearlyBreakdown.slice(0, 5).map((data) => {
+                  // 月単位の表示フォーマット
+                  let displayLabel: string;
+                  const yearValue = data.year;
+
+                  if (yearValue === 0) {
+                    // 0年目は「開始時」表記
+                    displayLabel = '開始時';
+                  } else if (yearValue < 1) {
+                    // 1年未満は「○ヶ月」表記
+                    const months = Math.round(yearValue * 12);
+                    displayLabel = `${months}ヶ月`;
+                  } else if (Number.isInteger(yearValue)) {
+                    // 整数年は「○年目」表記
+                    displayLabel = `${yearValue}年目`;
+                  } else {
+                    // 小数点がある場合は「○年○ヶ月」表記
+                    const years = Math.floor(yearValue);
+                    const months = Math.round((yearValue - years) * 12);
+                    if (months === 0) {
+                      displayLabel = `${years}年目`;
+                    } else {
+                      displayLabel = `${years}年${months}ヶ月`;
+                    }
+                  }
+
+                  return (
+                    <tr key={data.year}>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                        {displayLabel}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">
+                        {formatCurrency(data.principal)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(data.profit)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-gray-100">
+                        {formatCurrency(data.total)}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {result.yearlyBreakdown.length > 5 && (
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-sm text-center text-gray-500 dark:text-gray-400">
